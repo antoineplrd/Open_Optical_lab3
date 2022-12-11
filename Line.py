@@ -5,7 +5,7 @@ class Line:
         self._length = length
         self._successive = dict()
         self._number_of_channel = number_of_channel
-        self._state = [bool] * number_of_channel
+        self._state = [True] * number_of_channel
 
     @property
     def label(self):
@@ -47,12 +47,12 @@ class Line:
         return pow(10, -9) * signal_power * self._length
 
     def propagate(self, signal_information): # remplacer par lightpath ? 
-        self._state[signal_information.channel] = False
+        #self._state[signal_information.channel] = False
         signal_information.update_noise_power(self.noise_generation(signal_information.signal_power))
         signal_information.UpdateLatency(self.latency_generation())
         return self._successive.get(signal_information.path[0]).propagate(signal_information)
 
     def probe(self, signal_information):
         signal_information.update_noise_power(self.noise_generation(signal_information.signal_power))
-        signal_information.update_latency(self.latency_generation())
+        signal_information.UpdateLatency(self.latency_generation())
         return self._successive.get(signal_information.path[0]).probe(signal_information)

@@ -8,6 +8,7 @@ from Node import Node
 from Connection import Connection
 from Line import Line
 from Signal_information import Signal_information
+from tabulate import tabulate
 
 
 class Network:
@@ -94,6 +95,9 @@ class Network:
 
     def propagate(self, signal_information):
         return self._nodes.get(signal_information.path[0]).propagate(signal_information)
+
+    def probe(self, signal_information):
+        return self._nodes.get(signal_information.path[0]).probe(signal_information)
 
     def draw(self):
         G = nx.Graph()
@@ -210,8 +214,6 @@ class Network:
     def chanel_availability(self):
         var = list()
         path = list()
-        availability = list()
-        temp_availability = 1
 
         for i in self._nodes:
             for j in self._nodes:
@@ -219,26 +221,31 @@ class Network:
                     var.append((i, j))
                     path.append(self.find_paths(i, j))
 
-        test = list()
+        result_data = list()
 
-        for i in path:
-            for label in range(len(Path)):
-                if label < len(Path) - 1:  # dealing with the case for the last line
-                    line = Path[label] + Path[label + 1]
-                availability.append(self._lines.get(line).state)
-            for j in i:
-                path_cpy = j[:]
+        for AllPaths in path:
+            for actualPath in AllPaths:
+                availability_temp = list()
+                availability = list()
+                for label in range(len(actualPath)):
+                    if label < len(actualPath) - 1:  # dealing with the case for the last line
+                        line = actualPath[label] + actualPath[label + 1]
+                        availability_temp.append((line, self._lines.get(line).state))
+
+                availability.append(availability_temp)
+
+                path_cpy = actualPath[:]
                 path_cpy = '->'.join(path_cpy)
-                line = self.propagate(Signal_information(0.001, j))
-                test.append(list([path_cpy, availability]))
+                self.probe(Signal_information(0.001, actualPath))
+                result_data.append(list([path_cpy, availability]))
 
         data = {
 
-            "Paths": [i[0] for i in test],
-            "availability ": [i[1] for i in test],
+            "Paths": [i[0] for i in result_data],
+            "availability ": [i[1] for i in result_data],
 
         }
         df = pd.DataFrame(data)
-        print(df)
+        print(tabulate(df, showindex=True, headers=df.columns))
 
         return df

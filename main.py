@@ -5,6 +5,7 @@ import string
 import random
 from Network import Network
 from Connection import Connection
+from tabulate import tabulate
 
 
 def main():
