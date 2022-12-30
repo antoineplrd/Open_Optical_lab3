@@ -9,6 +9,8 @@ from Connection import Connection
 from Line import Line
 from Signal_information import Signal_information
 from tabulate import tabulate
+from itertools import chain
+import numpy as np
 
 
 class Network:
@@ -79,8 +81,10 @@ class Network:
                 successive_lines.update({i + j: self._lines.get(i + j)})
             self._nodes.get(i).successive = successive_lines
 
-    def find_paths(self, start_node, end_node, path=[]):
+    def find_paths(self, start_node, end_node, path=None):
 
+        if path is None:
+            path = []
         graph_dict = self._nodes.get(start_node).connected_nodes
         path = path + [start_node]
         if start_node == end_node:
@@ -95,9 +99,6 @@ class Network:
 
     def propagate(self, signal_information):
         return self._nodes.get(signal_information.path[0]).propagate(signal_information)
-
-    def probe(self, signal_information):
-        return self._nodes.get(signal_information.path[0]).probe(signal_information)
 
     def draw(self):
         G = nx.Graph()
@@ -141,43 +142,107 @@ class Network:
         return df
 
     def find_best_snr(self, input_node, output_node):
-        path = ""
+
+        global result
+        best_path = ""
+        temp_path = ""
+        temp = 0
+        full_paths = list()
         Dataframe = self._weighted_paths
+        Dataframe_occupancy = self._route_space
         all_paths = Dataframe['Paths'].tolist()
+        all_paths_occupancy = Dataframe_occupancy['Paths'].tolist()
+        all_occupancy = Dataframe_occupancy['availability'].tolist()
         all_noise_radio = Dataframe['Signal/noise (dB)'].tolist()
         noise_radio = min(all_noise_radio)
 
-        for i in all_paths:
-            if i[0] == input_node and i[len(i) - 1] == output_node:
-                if all_noise_radio[all_paths.index(i)] > noise_radio:
-                    for label in len(i) - 1:
-                        line = i[label] + i[label + 1]
-                        if self._lines.get(line).state == 1:
-                            noise_radio = all_noise_radio[all_paths.index(i)]
-                            path = i
+        while True:
+            for path in all_paths:
+                if path[0] == input_node and path[len(path) - 1] == output_node:
+                    if all_noise_radio[all_paths.index(path)] > noise_radio and path not in full_paths:
+                        noise_radio = all_noise_radio[all_paths.index(path)]
+                        temp_path = path
 
-        return path
+            for path_occupancy in all_paths_occupancy:
+                if temp_path == path_occupancy and temp_path not in full_paths:  # case where we have not already check this path
+                    occupancy = all_occupancy[all_paths_occupancy.index(path_occupancy)]
+
+                    final_occupancy = list(chain.from_iterable(occupancy))  # remove double [[]]
+
+                    if True in final_occupancy:
+                        result = True
+                    else:
+                        result = False
+
+            if result:
+                best_path = temp_path
+                temp = 1
+
+            elif not result and len(full_paths) == len(all_paths_occupancy):
+                best_path = ""
+                temp = 1
+
+            elif not result:
+                full_paths.append(temp_path)
+
+            if temp == 1:
+                break
+        print(temp_path)
+        print(best_path)
+        return best_path
 
     def find_best_latency(self, input_node, output_node):
-        path = ""
+        global result
+        best_path = ""
+        temp_path = ""
+        temp = 0
+        full_paths = list()
         Dataframe = self._weighted_paths
+        Dataframe_occupancy = self._route_space
         all_paths = Dataframe["Paths"].tolist()
+        all_paths_occupancy = Dataframe_occupancy['Paths'].tolist()
+        all_occupancy = Dataframe_occupancy['availability'].tolist()
         all_latency = Dataframe["Latency (s)"].tolist()
         latency = max(all_latency)
 
-        for i in all_paths:
+        while True:
+            for path in all_paths:
 
-            if i[0] == input_node and i[len(i) - 1] == output_node:
-                if all_latency[all_paths.index(i)] < latency:
-                    Path = i.replace('->', "")  # we remove "->"
-                    # pas bon je pense a revoir
-                    for label in range(len(Path)):
-                        if label < len(Path) - 1:  # dealing with the case for the last line
-                            line = Path[label] + Path[label + 1]
-                        if self._lines.get(line).state == 1:
-                            latency = all_latency[all_paths.index(i)]
-                            path = i
-        return path
+                if path[0] == input_node and path[len(path) - 1] == output_node:
+                    if all_latency[all_paths.index(path)] < latency and path not in full_paths:
+                        latency = all_latency[all_paths.index(path)]
+                        temp_path = path
+
+            for path_occupancy in all_paths_occupancy:
+                if temp_path == path_occupancy and temp_path not in full_paths:  # case where we have not already
+                    # check this path
+                    occupancy = all_occupancy[all_paths_occupancy.index(path_occupancy)]
+
+                    final_occupancy = list(chain.from_iterable(occupancy))  # remove double [[]]
+
+                    if True in final_occupancy:
+                        result = True
+                    else:
+                        result = False
+
+            if result is True:
+
+                best_path = temp_path
+                temp = 1
+
+            elif not result and len(full_paths) == len(all_paths_occupancy):
+                best_path = ""
+                temp = 1
+
+            elif not result:
+                full_paths.append(temp_path)
+
+            if temp == 1:
+                break
+
+        print(temp_path)
+        print(best_path)
+        return best_path
 
     def stream(self, connection, label="latency"):
 
@@ -186,7 +251,6 @@ class Network:
         signal_power = connection.signal_power
 
         if label == "snr":
-
             path_snr = self.find_best_latency(input, output)
             path_snr = list(path_snr.split("->"))
 
@@ -199,8 +263,8 @@ class Network:
 
         elif label == "latency":
             path_latency = self.find_best_latency(input, output)
-
             path_latency = list(path_latency.split("->"))
+
             signal_information = Signal_information(signal_power, path_latency)
             if path_latency != "":
                 propagate_latency = self.propagate(signal_information)
@@ -227,25 +291,44 @@ class Network:
             for actualPath in AllPaths:
                 availability_temp = list()
                 availability = list()
+                availability_path = list()
+                test = list()
+                final_availability = list()
+
                 for label in range(len(actualPath)):
                     if label < len(actualPath) - 1:  # dealing with the case for the last line
                         line = actualPath[label] + actualPath[label + 1]
-                        availability_temp.append((line, self._lines.get(line).state))
+                        availability_temp.append(self._lines.get(line).state)
 
                 availability.append(availability_temp)
 
                 path_cpy = actualPath[:]
                 path_cpy = '->'.join(path_cpy)
                 self.probe(Signal_information(0.001, actualPath))
-                result_data.append(list([path_cpy, availability]))
+                for chemin in availability:
+
+                    for index1 in range(len(chemin[0])):
+                        for index2 in range(len(chemin)):
+                            availability_path.append(chemin[index2][index1])
+
+                        if len(set(availability_path)) == 1 and availability_path[0] is True:
+                            test.append(True)
+                        elif len(set(availability_path)) == 1 and test[0] is False:
+                            test.append(False)
+                        else:
+                            test.append(False)
+                            availability_path = []
+                    final_availability.append(test)
+
+                result_data.append(list([path_cpy, final_availability]))
 
         data = {
 
             "Paths": [i[0] for i in result_data],
-            "availability ": [i[1] for i in result_data],
+            "availability": [i[1] for i in result_data],
 
         }
         df = pd.DataFrame(data)
-        print(tabulate(df, showindex=True, headers=df.columns))
+        # print(tabulate(df, showindex=True, headers=df.columns))
 
         return df

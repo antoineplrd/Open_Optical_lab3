@@ -46,8 +46,9 @@ class Line:
     def noise_generation(self, signal_power):
         return pow(10, -9) * signal_power * self._length
 
-    def propagate(self, signal_information): # remplacer par lightpath ? 
-        #self._state[signal_information.channel] = False
+    def propagate(self, signal_information): # add lightpath
+        #channel = lightpath.channel
+        #self.state[channel] = False
         signal_information.update_noise_power(self.noise_generation(signal_information.signal_power))
         signal_information.UpdateLatency(self.latency_generation())
         return self._successive.get(signal_information.path[0]).propagate(signal_information)

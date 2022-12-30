@@ -10,7 +10,7 @@ from tabulate import tabulate
 
 def main():
     network = Network()
-    network.chanel_availability()
+    network.find_best_latency('A', 'F')
 
     """nodeValue = 'ABCDEF'
     signal_power = 0.001
