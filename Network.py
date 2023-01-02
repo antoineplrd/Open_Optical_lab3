@@ -142,7 +142,7 @@ class Network:
         return df
 
     def find_best_snr(self, input_node, output_node):
-
+        print("salut")
         global result
         best_path = ""
         temp_path = ""
@@ -187,8 +187,7 @@ class Network:
 
             if temp == 1:
                 break
-        print(temp_path)
-        print(best_path)
+
         return best_path
 
     def find_best_latency(self, input_node, output_node):
@@ -240,8 +239,6 @@ class Network:
             if temp == 1:
                 break
 
-        print(temp_path)
-        print(best_path)
         return best_path
 
     def stream(self, connection, label="latency"):
@@ -256,6 +253,12 @@ class Network:
 
             signal_information = Signal_information(signal_power, path_snr)
             if path_snr != "":
+                """availability = self._route_space[self._route_space['Paths'] == path_snr]['availability'].iloc[0]
+                if 'Occupied' in availability:
+                    print(f'Cannot stream signal on path {path_snr}. One or more channels are occupied.')
+                else:
+                    print(f'Streaming signal on path {path_snr}.')"""
+
                 propagate_snr = self.propagate(signal_information)
                 connection.snr = propagate_snr.snr
             else:
@@ -329,6 +332,6 @@ class Network:
 
         }
         df = pd.DataFrame(data)
-        # print(tabulate(df, showindex=True, headers=df.columns))
+        #print(tabulate(df, showindex=True, headers=df.columns))
 
         return df

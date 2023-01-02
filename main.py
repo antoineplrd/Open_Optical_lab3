@@ -10,9 +10,8 @@ from tabulate import tabulate
 
 def main():
     network = Network()
-    network.find_best_latency('A', 'F')
 
-    """nodeValue = 'ABCDEF'
+    nodeValue = 'ABCDEF'
     signal_power = 0.001
 
     for i in range(0, 100):
@@ -26,10 +25,10 @@ def main():
 
         connections = Connection(inputNode, outputNode, signal_power)
 
-        network.stream(connections, 'latency')
+        network.stream(connections, 'snr')
         # network.stream(connections, 'snr')
 
-    # network.draw() # modifier pour mettre le chemin ?"""
+    # network.draw() # modifier pour mettre le chemin ?
 
 
 if "__main__" == __name__:
