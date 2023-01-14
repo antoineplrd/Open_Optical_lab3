@@ -1,4 +1,4 @@
-# Lab 4 - Open Optical Network ANTOINE POUILLARD
+# Lab 3 - Open Optical Network ANTOINE POUILLARD
 import networkx as nx
 from matplotlib import pyplot as plt
 import string
@@ -25,10 +25,13 @@ def main():
 
         connections = Connection(inputNode, outputNode, signal_power)
 
-        network.stream(connections, 'snr')
+        network.stream(connections, 'latency')
         # network.stream(connections, 'snr')
 
     # network.draw() # modifier pour mettre le chemin ?
+
+    df = network.chanel_availability()
+    print(tabulate(df, showindex=True, headers=df.columns))
 
 
 if "__main__" == __name__:

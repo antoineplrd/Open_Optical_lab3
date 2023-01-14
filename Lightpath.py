@@ -1,9 +1,9 @@
-import Signal_information
+from Signal_information import Signal_information
 
 
 class Lightpath(Signal_information):
-    def __init__(self, channel):
-        super.__init__(self)
+    def __init__(self, channel, signal_power, path):
+        super().__init__(signal_power, path)
         self._channel = channel
 
     @property
